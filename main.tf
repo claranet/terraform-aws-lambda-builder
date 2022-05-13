@@ -47,7 +47,7 @@ module "source_zip_file" {
 
 
 data "archive_file" "source_zip_file" {
-  enabled = var.enabled && var.build_mode != "DISABLED" && var.archive_method == "NATIVE"
+  count = var.enabled && var.build_mode != "DISABLED" && var.archive_method == "NATIVE" ? 1 : 0
 
   type        = "zip"
   source_dir  = var.source_dir
@@ -55,9 +55,9 @@ data "archive_file" "source_zip_file" {
 }
 
 locals {
-  source_zip_file_output_sha          = var.enabled && var.build_mode != "DISABLED" && var.archive_method == "NATIVE" ? data.archive_file.source_zip_file.output_sha : module.source_zip_file.output_sha
-  source_zip_file_output_path         = var.enabled && var.build_mode != "DISABLED" && var.archive_method == "NATIVE" ? data.archive_file.source_zip_file.output_path : module.source_zip_file.output_path
-  source_zip_file_output_base64sha256 = var.enabled && var.build_mode != "DISABLED" && var.archive_method == "NATIVE" ? data.archive_file.source_zip_file.output_base64sha256 : module.source_zip_file.output_base64sha256
+  source_zip_file_output_sha          = var.enabled && var.build_mode != "DISABLED" && var.archive_method == "NATIVE" ? data.archive_file.source_zip_file[0].output_sha : module.source_zip_file.output_sha
+  source_zip_file_output_path         = var.enabled && var.build_mode != "DISABLED" && var.archive_method == "NATIVE" ? data.archive_file.source_zip_file[0].output_path : module.source_zip_file.output_path
+  source_zip_file_output_base64sha256 = var.enabled && var.build_mode != "DISABLED" && var.archive_method == "NATIVE" ? data.archive_file.source_zip_file[0].output_base64sha256 : module.source_zip_file.output_base64sha256
 }
 
 ############################################
