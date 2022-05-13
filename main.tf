@@ -38,11 +38,26 @@ data "aws_region" "current" {
 module "source_zip_file" {
   source = "github.com/raymondbutcher/terraform-archive-stable?ref=v0.0.4"
 
-  enabled = var.enabled && var.build_mode != "DISABLED"
+  enabled = var.enabled && var.build_mode != "DISABLED" && var.archive_method == "MODULE"
 
   empty_dirs  = var.empty_dirs
   output_path = var.enabled && var.build_mode == "FILENAME" ? var.filename : var.enabled && var.build_mode != "DISABLED" ? "${path.module}/zip_files/${data.aws_partition.current[0].partition}-${data.aws_region.current[0].name}-${data.aws_caller_identity.current[0].account_id}-${var.function_name}.zip" : ""
   source_dir  = var.source_dir
+}
+
+
+data "archive_file" "source_zip_file" {
+  enabled = var.enabled && var.build_mode != "DISABLED" && var.archive_method == "NATIVE"
+
+  type        = "zip"
+  source_dir  = var.source_dir
+  output_path = var.enabled && var.build_mode == "FILENAME" ? var.filename : var.enabled && var.build_mode != "DISABLED" ? "${path.module}/zip_files/${data.aws_partition.current[0].partition}-${data.aws_region.current[0].name}-${data.aws_caller_identity.current[0].account_id}-${var.function_name}.zip" : ""
+}
+
+locals {
+  source_zip_file_output_sha          = var.enabled && var.build_mode != "DISABLED" && var.archive_method == "NATIVE" ? data.archive_file.source_zip_file.output_sha : module.source_zip_file.output_sha
+  source_zip_file_output_path         = var.enabled && var.build_mode != "DISABLED" && var.archive_method == "NATIVE" ? data.archive_file.source_zip_file.output_path : module.source_zip_file.output_path
+  source_zip_file_output_base64sha256 = var.enabled && var.build_mode != "DISABLED" && var.archive_method == "NATIVE" ? data.archive_file.source_zip_file.output_base64sha256 : module.source_zip_file.output_base64sha256
 }
 
 ############################################
@@ -54,8 +69,8 @@ resource "aws_s3_bucket_object" "source_zip_file" {
   count = var.enabled && contains(["CODEBUILD", "LAMBDA", "S3"], var.build_mode) ? 1 : 0
 
   bucket = var.s3_bucket
-  key    = contains(["CODEBUILD", "LAMBDA"], var.build_mode) ? "${var.function_name}/${module.source_zip_file.output_sha}/source.zip" : var.s3_key
-  source = module.source_zip_file.output_path
+  key    = contains(["CODEBUILD", "LAMBDA"], var.build_mode) ? "${var.function_name}/${local.source_zip_file_output_sha}/source.zip" : var.s3_key
+  source = local.source_zip_file_output_path
 
   lifecycle {
     create_before_destroy = true
@@ -137,9 +152,9 @@ resource "aws_cloudformation_stack" "builder" {
   on_failure   = "DELETE"
 
   parameters = merge(local.cloudformation_parameters, {
-    KeyTarget     = "${var.function_name}/${module.source_zip_file.output_sha}/${random_string.build_id[0].result}.zip"
+    KeyTarget     = "${var.function_name}/${local.source_zip_file_output_sha}/${random_string.build_id[0].result}.zip"
     KeyTargetName = "${random_string.build_id[0].result}.zip"
-    KeyTargetPath = "${var.function_name}/${module.source_zip_file.output_sha}"
+    KeyTargetPath = "${var.function_name}/${local.source_zip_file_output_sha}"
   })
 
   template_body = local.cloudformation_template_body
@@ -195,7 +210,7 @@ resource "aws_lambda_function" "built" {
   s3_bucket                      = var.s3_bucket
   s3_key                         = contains(["CODEBUILD", "LAMBDA", "S3"], var.build_mode) ? coalesce(local.built_s3_key, local.source_zip_file_s3_key) : var.s3_key
   s3_object_version              = var.s3_object_version
-  source_code_hash               = contains(["FILENAME", "S3"], var.build_mode) ? module.source_zip_file.output_base64sha256 : var.source_code_hash
+  source_code_hash               = contains(["FILENAME", "S3"], var.build_mode) ? local.source_zip_file_output_base64sha256 : var.source_code_hash
   tags                           = var.tags
   timeout                        = var.timeout
 

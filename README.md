@@ -188,6 +188,7 @@ in the master branch, so don't bother manually changing them.
 | role\_policy\_arns | If `role` is not provided, one will be created with these policy ARNs attached. | `list(string)` | `[]` | no |
 | source\_dir | Local source directory for the Lambda package. This will be zipped and uploaded to the S3 bucket. Requires `s3_bucket`. Conflicts with `s3_key`, `s3_object_version` and `filename`. | `string` | `""` | no |
 | enable\_input\_validation | Check validity of input variables. | `bool` | `true` | no |
+| archive\_method | The archive method to use, one of `MODULE` or `NATIVE`. | `string` | `MODULE` | no |
 
 ## Outputs
 

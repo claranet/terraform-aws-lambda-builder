@@ -1,5 +1,11 @@
 # Builder arguments.
 
+variable "archive_method" {
+  description = "The archive method to use, one of `MODULE` or `NATIVE`."
+  type        = string
+  default     = "MODULE"
+}
+
 variable "build_mode" {
   description = "The build mode to use, one of `CODEBUILD`, `DISABLED`, `FILENAME`, `LAMBDA`, `S3`."
   type        = string
