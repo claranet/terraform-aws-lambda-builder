@@ -65,7 +65,7 @@ locals {
 # (if build mode is CODEBUILD, LAMBDA, S3) #
 ############################################
 
-resource "aws_s3_bucket_object" "source_zip_file" {
+resource "aws_s3_object" "source_zip_file" {
   count = var.enabled && contains(["CODEBUILD", "LAMBDA", "S3"], var.build_mode) ? 1 : 0
 
   bucket = var.s3_bucket
@@ -78,7 +78,7 @@ resource "aws_s3_bucket_object" "source_zip_file" {
 }
 
 locals {
-  source_zip_file_s3_key = var.enabled && contains(["CODEBUILD", "LAMBDA", "S3"], var.build_mode) ? aws_s3_bucket_object.source_zip_file[0].key : null
+  source_zip_file_s3_key = var.enabled && contains(["CODEBUILD", "LAMBDA", "S3"], var.build_mode) ? aws_s3_object.source_zip_file[0].key : null
 }
 
 ###############################################
